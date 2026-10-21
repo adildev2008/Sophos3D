@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sophos3D - Philosophical Wisdom Generator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D Graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GSAP for Ultra-smooth Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            DEFAULT: '#C5A059',
+                            light: '#E6CA65',
+                            dark: '#9A7B3E'
+                        },
+                        obsidian: '#0A0A0E',
+                        darkslate: '#12131A'
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        sans: ['Plus Jakarta Sans', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0A0A0E;
+            color: #E2E8F0;
+            overflow-x: hidden;
+        }
+
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        .glass-card {
+            background: rgba(18, 19, 26, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(197, 160, 89, 0.22);
+        }
+
+        .glass-btn {
+            background: linear-gradient(135deg, rgba(197, 160, 89, 0.15) 0%, rgba(255, 255, 255, 0.03) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(197, 160, 89, 0.3);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .glass-btn:hover {
+            border-color: rgba(197, 160, 89, 0.8);
+            box-shadow: 0 0 25px rgba(197, 160, 89, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .glow-text {
+            text-shadow: 0 0 20px rgba(197, 160, 89, 0.35);
+        }
+
+        canvas#webgl-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: auto;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 10, 14, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(197, 160, 89, 0.4);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="h-full w-full relative flex flex-col justify-between overflow-hidden antialiased select-none">
+
+    <!-- 3D Canvas element -->
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- Top Navigation Header -->
+    <header class="relative z-20 w-full px-6 py-5 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full border border-gold/40 flex items-center justify-center glass-card">
+                <i class="fa-solid fa-brain text-gold text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-cinzel text-xl font-bold tracking-widest text-white">SOPHOS<span class="text-gold">3D</span></h1>
+                <p class="text-xs text-gray-400 font-light tracking-wider">IMMERSIVE WISDOM</p>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center space-x-3">
+            <button id="saved-drawer-btn" class="glass-card text-xs md:text-sm px-4 py-2 rounded-full border border-gold/20 hover:border-gold/50 flex items-center space-x-2 text-gold transition">
+                <i class="fa-solid fa-bookmark text-xs"></i>
+                <span>Saved (<span id="saved-count">0</span>)</span>
+            </button>
+
+            <button id="category-btn" class="glass-card text-xs md:text-sm px-4 py-2 rounded-full border border-gold/20 hover:border-gold/50 flex items-center space-x-2 text-gray-300 transition">
+                <i class="fa-solid fa-filter text-gold text-xs"></i>
+                <span id="current-category">All Wisdom</span>
+                <i class="fa-solid fa-chevron-down text-xs opacity-60"></i>
+            </button>
+
+            <!-- TTS Voice Indicator -->
+            <div id="tts-indicator" class="hidden glass-card px-3 py-1.5 rounded-full border border-gold/40 text-xs text-gold flex items-center space-x-2 animate-pulse">
+                <i class="fa-solid fa-waveform"></i>
+                <span>Speaking...</span>
+            </div>
+
+            <button id="sound-toggle" class="w-10 h-10 rounded-full glass-card border border-gold/20 hover:border-gold text-gold flex items-center justify-center transition">
+                <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Category Dropdown Modal -->
+    <div id="category-dropdown" class="hidden absolute top-20 right-6 z-30 w-56 glass-card rounded-2xl p-2 shadow-2xl border border-gold/30">
+        <div class="text-xs font-semibold text-gray-400 px-3 py-2 uppercase tracking-wider">Select School</div>
+        <button class="cat-option w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gold/10 rounded-xl transition flex items-center justify-between" data-category="ALL">
+            <span>All Philosophies</span>
+        </button>
+        <button class="cat-option w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gold/10 rounded-xl transition flex items-center justify-between" data-category="Stoicism">
+            <span>Stoicism</span>
+        </button>
+        <button class="cat-option w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gold/10 rounded-xl transition flex items-center justify-between" data-category="Existentialism">
+            <span>Existentialism</span>
+        </button>
+        <button class="cat-option w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gold/10 rounded-xl transition flex items-center justify-between" data-category="Eastern">
+            <span>Eastern Thought</span>
+        </button>
+        <button class="cat-option w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gold/10 rounded-xl transition flex items-center justify-between" data-category="Enlightenment">
+            <span>Enlightenment</span>
+        </button>
+    </div>
+
+    <main class="relative z-10 flex-1 flex flex-col justify-center items-center px-4 md:px-12 max-w-6xl mx-auto w-full">
+        
+        <!-- Idle State Headline -->
+        <div id="hero-welcome" class="text-center max-w-xl transition-all duration-700">
+            <span class="text-gold uppercase tracking-[0.3em] text-xs font-semibold mb-3 block">Philosophical Oracle</span>
+            <h2 class="font-cinzel text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">Seek Timeless Insights</h2>
+            <p class="text-gray-400 text-sm md:text-base font-light">Watch sparkling embers rise and click below to summon infinite thoughts from ancient and modern thinkers.</p>
+        </div>
+
+        <!-- Quote Container -->
+        <div id="quote-card" class="opacity-0 pointer-events-none transform translate-y-8 transition-all duration-700 w-full max-w-3xl glass-card rounded-3xl p-6 md:p-10 my-auto shadow-2xl relative overflow-hidden">
+            <i class="fa-solid fa-quote-left text-4xl md:text-6xl text-gold/15 absolute -top-2 left-4 pointer-events-none"></i>
+
+            <blockquote id="quote-text" class="font-cinzel text-xl md:text-3xl text-white font-medium leading-relaxed mb-6 glow-text relative z-10">
+                "You have power over your mind - not outside events. Realize this, and you will find strength."
+            </blockquote>
+
+            <div class="flex flex-col gap-3 border-t border-gold/20 pt-5">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h3 id="quote-author" class="text-lg md:text-xl font-bold text-gold tracking-wide">Marcus Aurelius</h3>
+                        <p id="quote-era" class="text-xs text-gray-400 font-light tracking-wider uppercase mb-1">Ancient Rome • Stoicism</p>
+                        <p id="quote-short-bio" class="text-xs text-gray-300 italic max-w-lg font-light leading-snug">
+                            Roman Emperor and Stoic philosopher who recorded timeless personal reflections on discipline, resilience, and acceptance.
+                        </p>
+                    </div>
+
+                    <!-- Action Utilities -->
+                    <div class="flex items-center space-x-2">
+                        <button id="btn-read" title="Replay Voiceover" class="px-3.5 py-2 rounded-xl glass-btn text-xs font-medium text-gold hover:text-white flex items-center space-x-1.5">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span class="hidden sm:inline">Listen</span>
+                        </button>
+                        <button id="btn-save" title="Save to Favorites" class="px-3.5 py-2 rounded-xl glass-btn text-xs font-medium text-gold hover:text-white flex items-center space-x-1.5">
+                            <i id="save-icon" class="fa-regular fa-bookmark"></i>
+                            <span class="hidden sm:inline" id="save-btn-text">Save</span>
+                        </button>
+                        <button id="btn-bio" title="View Biography" class="px-3.5 py-2 rounded-xl glass-btn text-xs font-medium text-gold hover:text-white flex items-center space-x-1.5">
+                            <i class="fa-solid fa-book-open"></i>
+                            <span class="hidden sm:inline">Bio</span>
+                        </button>
+                        <button id="btn-copy" title="Copy Quote" class="w-9 h-9 rounded-xl glass-btn text-xs text-gray-300 hover:text-gold flex items-center justify-center">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Action Bar -->
+    <footer class="relative z-20 w-full pb-8 pt-4 px-6 flex flex-col items-center justify-center">
+        <button id="trigger-btn" class="glass-btn px-8 py-4 rounded-full text-gold font-cinzel font-bold text-sm md:text-base tracking-widest flex items-center space-x-3 group relative overflow-hidden shadow-xl">
+            <span class="absolute inset-0 bg-gold/10 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500"></span>
+            <i class="fa-solid fa-compass text-gold text-lg group-hover:rotate-180 transition-transform duration-700"></i>
+            <span id="btn-text" class="relative z-10 uppercase">SPARK WISDOM</span>
+        </button>
+
+        <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-4">Drag to rotate embers • Press Spacebar for next quote</p>
+    </footer>
+
+    <!-- Saved Quotes Drawer Modal -->
+    <div id="saved-modal" class="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-500">
+        <div class="glass-card w-full max-w-md h-full p-6 relative border-l border-gold/30 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-500">
+            <div class="flex items-center justify-between pb-4 border-b border-gold/20 mb-4">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-bookmark text-gold"></i>
+                    <h3 class="font-cinzel text-lg font-bold text-white">Saved Quotes</h3>
+                </div>
+                <button id="close-saved" class="w-8 h-8 rounded-full glass-card text-gray-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="saved-list" class="overflow-y-auto flex-1 space-y-4 pr-1">
+                <!-- Dynamic Saved Items Rendered Here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Philosopher Bio Drawer -->
+    <div id="bio-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-500">
+        <div class="glass-card w-full max-w-lg rounded-3xl p-6 md:p-8 relative border border-gold/30 shadow-2xl transform scale-95 transition-transform duration-500 max-h-[85vh] flex flex-col">
+            <button id="close-bio" class="absolute top-5 right-5 w-8 h-8 rounded-full glass-card text-gray-400 hover:text-white flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center space-x-4 mb-4">
+                <div class="w-14 h-14 rounded-2xl border border-gold/40 flex items-center justify-center glass-card text-gold text-2xl font-cinzel font-bold" id="bio-initial">
+                    M
+                </div>
+                <div>
+                    <h3 id="modal-author" class="font-cinzel text-xl md:text-2xl font-bold text-white">Marcus Aurelius</h3>
+                    <p id="modal-era" class="text-xs text-gold font-medium uppercase tracking-wider">Stoicism (121 – 180 AD)</p>
+                </div>
+            </div>
+
+            <div class="overflow-y-auto pr-2 flex-1 my-2">
+                <h4 class="text-xs text-gray-400 uppercase font-semibold tracking-wider mb-2">Core Philosophical Legacy</h4>
+                <p id="modal-bio" class="text-sm text-gray-300 leading-relaxed font-light mb-4">
+                    Roman Emperor and Stoic philosopher. His personal writings offer timeless advice on resilience, duty, and self-discipline.
+                </p>
+                
+                <h4 class="text-xs text-gray-400 uppercase font-semibold tracking-wider mb-2">Key Themes</h4>
+                <div id="modal-tags" class="flex flex-wrap gap-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 glass-card px-5 py-2.5 rounded-full border border-gold/40 text-gold text-xs font-medium tracking-wide opacity-0 pointer-events-none transition-all duration-300 flex items-center space-x-2">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-msg">Quote saved!</span>
+    </div>
+
+    <script>
+        const PHILOSOPHY_DB = [
+            {
+                id: "marcus-aurelius-1",
+                author: "Marcus Aurelius",
+                era: "Ancient Rome (121 – 180 AD)",
+                category: "Stoicism",
+                gender: "male",
+                voice: "Charon",
+                voiceInstruction: "Say with deep, calm, and resolute stoic authority: ",
+                quote: "You have power over your mind - not outside events. Realize this, and you will find strength.",
+                shortBio: "Roman Emperor and Stoic thinker who authored 'Meditations' on inner fortitude.",
+                biography: "Roman Emperor and Stoic philosopher. His private personal writings represent one of the greatest guides to Stoic duty, emotional resilience, and self-mastery.",
+                tags: ["Stoicism", "Mindfulness", "Inner Strength"],
+                color: 0xC5A059
+            },
+            {
+                id: "epictetus-1",
+                author: "Epictetus",
+                era: "Ancient Greece (50 – 135 AD)",
+                category: "Stoicism",
+                gender: "male",
+                voice: "Orus",
+                voiceInstruction: "Say with calm, commanding stoic insight: ",
+                quote: "Wealth consists not in having great possessions, but in having few wants.",
+                shortBio: "Greek Stoic philosopher who taught that freedom comes from mastering one's desires.",
+                biography: "Born a slave in Hierapolis, Epictetus rose to become one of the most influential Stoic teachers in history, emphasizing moral self-determination and virtue.",
+                tags: ["Freedom", "Desire", "Stoicism"],
+                color: 0xD4AF37
+            },
+            {
+                id: "seneca-1",
+                author: "Seneca the Younger",
+                era: "Ancient Rome (4 BC – 65 AD)",
+                category: "Stoicism",
+                gender: "male",
+                voice: "Charon",
+                voiceInstruction: "Say with thoughtful, stately wisdom: ",
+                quote: "We suffer more often in imagination than in reality.",
+                shortBio: "Roman Stoic philosopher, statesman, and dramatist.",
+                biography: "Seneca was a prominent statesman and writer who advocated Stoic principles on managing anxiety, time, and emotional resilience.",
+                tags: ["Anxiety", "Perception", "Stoicism"],
+                color: 0xDAA520
+            },
+            {
+                id: "friedrich-nietzsche-1",
+                author: "Friedrich Nietzsche",
+                era: "19th Century Germany (1844 – 1900)",
+                category: "Existentialism",
+                gender: "male",
+                voice: "Fenrir",
+                voiceInstruction: "Say with intense passion and dramatic conviction: ",
+                quote: "He who has a why to live for can bear almost any how.",
+                shortBio: "Cultural critic and philosopher who examined existential meaning and the human will.",
+                biography: "German philosopher whose work questioned traditional morality, religion, and the nature of human existence. Promoted individual greatness and the affirmation of life.",
+                tags: ["Meaning", "Existentialism", "Willpower"],
+                color: 0x8B0000
+            },
+            {
+                id: "jean-paul-sartre-1",
+                author: "Jean-Paul Sartre",
+                era: "20th Century France (1905 – 1980)",
+                category: "Existentialism",
+                gender: "male",
+                voice: "Fenrir",
+                voiceInstruction: "Say with sharp, articulate existential gravity: ",
+                quote: "Freedom is what you do with what's been done to you.",
+                shortBio: "Key figure in 20th-century French philosophy and existentialism.",
+                biography: "Sartre argued that human existence precedes essence, placing total responsibility upon individuals to construct their own meaning and choices.",
+                tags: ["Freedom", "Responsibility", "Existentialism"],
+                color: 0xA52A2A
+            },
+            {
+                id: "lao-tzu-1",
+                author: "Lao Tzu",
+                era: "Ancient China (6th Century BC)",
+                category: "Eastern",
+                gender: "male",
+                voice: "Algieba",
+                voiceInstruction: "Say with gentle, wise, and peaceful serenity: ",
+                quote: "When I let go of what I am, I become what I might be.",
+                shortBio: "Founder of Taoism and author of the Tao Te Ching on harmony and flow.",
+                biography: "Ancient Chinese philosopher traditionally regarded as the founder of philosophical Taoism. Author of the Tao Te Ching, emphasizing harmony with nature.",
+                tags: ["Taoism", "Harmony", "Flow State"],
+                color: 0x2E8B57
+            },
+            {
+                id: "zhuangzi-1",
+                author: "Zhuangzi",
+                era: "Ancient China (369 – 286 BC)",
+                category: "Eastern",
+                gender: "male",
+                voice: "Algieba",
+                voiceInstruction: "Say with whimsical yet profound clarity: ",
+                quote: "Happiness is the absence of the striving for happiness.",
+                shortBio: "Influential Taoist philosopher famous for his parables and deep insights.",
+                biography: "Zhuangzi used humorous parables and profound paradoxes to critique human convention and reveal the spontaneous beauty of nature.",
+                tags: ["Taoism", "Happiness", "Non-Attachment"],
+                color: 0x3CB371
+            },
+            {
+                id: "simone-de-beauvoir-1",
+                author: "Simone de Beauvoir",
+                era: "20th Century France (1908 – 1986)",
+                category: "Existentialism",
+                gender: "female",
+                voice: "Kore",
+                voiceInstruction: "Say with eloquent, confident, and powerful female conviction: ",
+                quote: "Change your life today. Don't gamble on the future, act now, without delay.",
+                shortBio: "Existentialist philosopher and author who shaped modern ethics.",
+                biography: "French existentialist philosopher, writer, and social theorist. Her works revolutionized existential phenomenology and moral ethics.",
+                tags: ["Freedom", "Action", "Existentialism"],
+                color: 0x9370DB
+            },
+            {
+                id: "socrates-1",
+                author: "Socrates",
+                era: "Ancient Greece (470 – 399 BC)",
+                category: "Stoicism",
+                gender: "male",
+                voice: "Orus",
+                voiceInstruction: "Say with inquisitive, resonant classical wisdom: ",
+                quote: "An unexamined life is not worth living.",
+                shortBio: "Father of Western philosophy who pioneered critical inquiry.",
+                biography: "Classical Greek philosopher credited as one of the founders of Western philosophy. Pioneered the Socratic method of dialectical inquiry.",
+                tags: ["Self-Knowledge", "Wisdom", "Ethics"],
+                color: 0x4682B4
+            },
+            {
+                id: "immanuel-kant-1",
+                author: "Immanuel Kant",
+                era: "18th Century Prussia (1724 – 1804)",
+                category: "Enlightenment",
+                gender: "male",
+                voice: "Charon",
+                voiceInstruction: "Say clearly and deliberately like a thoughtful scholar: ",
+                quote: "Science is organized knowledge. Wisdom is organized life.",
+                shortBio: "Enlightenment thinker who unified reason and moral duty.",
+                biography: "Central figure in modern Western philosophy. Kant argued that human understanding is the source of general laws that structure experience.",
+                tags: ["Reason", "Enlightenment", "Wisdom"],
+                color: 0xDAA520
+            }
+        ];
+
+        // Procedural generator pool for endless variety
+        const WISDOM_TEMPLATES = [
+            { quote: "The mind that adapts to change holds infinite dominion over its peace.", author: "Marcus Aurelius", category: "Stoicism", gender: "male", voice: "Charon", era: "Ancient Rome", shortBio: "Roman Emperor and Stoic thinker.", tags: ["Adaptability", "Peace"] },
+            { quote: "To know the limits of your knowledge is the beginning of true strength.", author: "Socrates", category: "Stoicism", gender: "male", voice: "Orus", era: "Ancient Greece", shortBio: "Pioneer of Western philosophy.", tags: ["Humility", "Wisdom"] },
+            { quote: "Freedom is found when you cease to demand that reality conform to your expectations.", author: "Epictetus", category: "Stoicism", gender: "male", voice: "Orus", era: "Ancient Greece", shortBio: "Stoic philosopher of personal freedom.", tags: ["Acceptance", "Freedom"] },
+            { quote: "He who looks inward discovers the quiet compass that no storm can alter.", author: "Lao Tzu", category: "Eastern", gender: "male", voice: "Algieba", era: "Ancient China", shortBio: "Founder of Taoist thought.", tags: ["Serenity", "Clarity"] },
+            { quote: "In the depth of winter, I finally learned that within me there lay an invincible summer.", author: "Albert Camus", category: "Existentialism", gender: "male", voice: "Fenrir", era: "20th Century France", shortBio: "Philosopher of the absurd and human resilience.", tags: ["Resilience", "Hope"] },
+            { quote: "Dare to declare your own purpose, for no external force will bestow it upon you.", author: "Simone de Beauvoir", category: "Existentialism", gender: "female", voice: "Kore", era: "20th Century France", shortBio: "Existentialist and moral theorist.", tags: ["Purpose", "Identity"] }
+        ];
+
+        class AudioFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+                this.currentAudio = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playTone(freq, type = 'sine', duration = 0.3, vol = 0.1) {
+                if (this.muted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e){}
+            }
+
+            playSwoosh() {
+                if (this.muted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(500, this.ctx.currentTime + 0.5);
+                    gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.5);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.5);
+                } catch(e){}
+            }
+
+            stopSpeech() {
+                if (this.currentAudio) {
+                    this.currentAudio.pause();
+                    this.currentAudio = null;
+                }
+                document.getElementById('tts-indicator').classList.add('hidden');
+            }
+
+            async speakQuote(quoteObj) {
+                if (this.muted) return;
+                this.stopSpeech();
+
+                const indicator = document.getElementById('tts-indicator');
+                indicator.classList.remove('hidden');
+
+                try {
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+                    const promptText = `${quoteObj.voiceInstruction || "Say calmly: "} "${quoteObj.quote}"`;
+
+                    const payload = {
+                        contents: [{ parts: [{ text: promptText }] }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: {
+                                voiceConfig: {
+                                    prebuiltVoiceConfig: { voiceName: quoteObj.voice || "Charon" }
+                                }
+                            }
+                        },
+                        model: "gemini-2.5-flash-preview-tts"
+                    };
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if(!response.ok) throw new Error('Speech API failed');
+
+                    const result = await response.json();
+                    const part = result?.candidates?.[0]?.content?.parts?.[0];
+                    const audioData = part?.inlineData?.data;
+                    const mimeType = part?.inlineData?.mimeType;
+
+                    if (audioData && mimeType) {
+                        const match = mimeType.match(/rate=(\d+)/);
+                        const sampleRate = match ? parseInt(match[1], 10) : 24000;
+                        const pcm16 = new Int16Array(this.base64ToArrayBuffer(audioData));
+                        const wavBlob = this.pcmToWav(pcm16, sampleRate);
+                        const audioUrl = URL.createObjectURL(wavBlob);
+
+                        this.currentAudio = new Audio(audioUrl);
+                        this.currentAudio.onended = () => indicator.classList.add('hidden');
+                        this.currentAudio.play();
+                    } else {
+                        indicator.classList.add('hidden');
+                    }
+                } catch (e) {
+                    console.warn("TTS fallback active:", e);
+                    indicator.classList.add('hidden');
+                }
+            }
+
+            base64ToArrayBuffer(base64) {
+                const binaryString = atob(base64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return bytes.buffer;
+            }
+
+            pcmToWav(pcm16, sampleRate) {
+                const numChannels = 1;
+                const bitsPerSample = 16;
+                const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+                const blockAlign = numChannels * (bitsPerSample / 8);
+                const dataSize = pcm16.length * 2;
+                const buffer = new ArrayBuffer(44 + dataSize);
+                const view = new DataView(buffer);
+
+                const writeString = (offset, string) => {
+                    for (let i = 0; i < string.length; i++) {
+                        view.setUint8(offset + i, string.charCodeAt(i));
+                    }
+                };
+
+                writeString(0, 'RIFF');
+                view.setUint32(4, 36 + dataSize, true);
+                writeString(8, 'WAVE');
+                writeString(12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true);
+                view.setUint16(22, numChannels, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, byteRate, true);
+                view.setUint16(32, blockAlign, true);
+                view.setUint16(34, bitsPerSample, true);
+                writeString(36, 'data');
+                view.setUint32(40, dataSize, true);
+
+                let offset = 44;
+                for (let i = 0; i < pcm16.length; i++, offset += 2) {
+                    view.setInt16(offset, pcm16[i], true);
+                }
+
+                return new Blob([buffer], { type: 'audio/wav' });
+            }
+        }
+
+        const audioFX = new AudioFX();
+
+        class SceneManager {
+            constructor() {
+                this.canvas = document.getElementById('webgl-canvas');
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.FogExp2(0x0A0A0E, 0.02);
+
+                this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+                this.camera.position.set(0, 0, 7);
+
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: this.canvas,
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: "high-performance"
+                });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+                this.emberParticles = null;
+                this.emberPositions = null;
+                this.emberVelocities = null;
+
+                this.lights = {};
+                this.mouseX = 0;
+                this.mouseY = 0;
+
+                this.initLights();
+                this.initRisingEmbers();
+                this.addEvents();
+                this.render();
+            }
+
+            initLights() {
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                this.scene.add(ambientLight);
+
+                const bottomGlow = new THREE.PointLight(0xC5A059, 4, 12);
+                bottomGlow.position.set(0, -4, 2);
+                this.scene.add(bottomGlow);
+                this.lights.bottomGlow = bottomGlow;
+            }
+
+            initRisingEmbers() {
+                const particleCount = window.innerWidth < 768 ? 600 : 1500;
+                const geometry = new THREE.BufferGeometry();
+                this.emberPositions = new Float32Array(particleCount * 3);
+                this.emberVelocities = new Float32Array(particleCount * 3);
+                const colors = new Float32Array(particleCount * 3);
+
+                const baseColor = new THREE.Color(0xC5A059);
+                const highlightColor = new THREE.Color(0xFF8C00);
+
+                for (let i = 0; i < particleCount; i++) {
+                    const i3 = i * 3;
+                    this.emberPositions[i3] = (Math.random() - 0.5) * 16;
+                    this.emberPositions[i3 + 1] = (Math.random() - 0.5) * 10 - 2;
+                    this.emberPositions[i3 + 2] = (Math.random() - 0.5) * 8;
+
+                    this.emberVelocities[i3] = (Math.random() - 0.5) * 0.008;
+                    this.emberVelocities[i3 + 1] = Math.random() * 0.025 + 0.008;
+                    this.emberVelocities[i3 + 2] = (Math.random() - 0.5) * 0.005;
+
+                    const mixedColor = baseColor.clone().lerp(highlightColor, Math.random());
+                    colors[i3] = mixedColor.r;
+                    colors[i3 + 1] = mixedColor.g;
+                    colors[i3 + 2] = mixedColor.b;
+                }
+
+                geometry.setAttribute('position', new THREE.BufferAttribute(this.emberPositions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+                const pCanvas = document.createElement('canvas');
+                pCanvas.width = 64;
+                pCanvas.height = 64;
+                const pCtx = pCanvas.getContext('2d');
+                const grad = pCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                grad.addColorStop(0.3, 'rgba(230, 202, 101, 0.8)');
+                grad.addColorStop(0.7, 'rgba(255, 140, 0, 0.3)');
+                grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                pCtx.fillStyle = grad;
+                pCtx.fillRect(0, 0, 64, 64);
+
+                const particleTexture = new THREE.CanvasTexture(pCanvas);
+
+                const material = new THREE.PointsMaterial({
+                    size: 0.12,
+                    map: particleTexture,
+                    transparent: true,
+                    opacity: 0.85,
+                    vertexColors: true,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+
+                this.emberParticles = new THREE.Points(geometry, material);
+                this.scene.add(this.emberParticles);
+            }
+
+            transitionToTheme(colorHex) {
+                if (this.lights.bottomGlow) {
+                    gsap.to(this.lights.bottomGlow.color, {
+                        r: new THREE.Color(colorHex || 0xC5A059).r,
+                        g: new THREE.Color(colorHex || 0xC5A059).g,
+                        b: new THREE.Color(colorHex || 0xC5A059).b,
+                        duration: 1
+                    });
+                }
+            }
+
+            addEvents() {
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+
+                window.addEventListener('mousemove', (e) => {
+                    this.mouseX = (e.clientX / window.innerWidth) - 0.5;
+                    this.mouseY = (e.clientY / window.innerHeight) - 0.5;
+                });
+            }
+
+            render() {
+                requestAnimationFrame(() => this.render());
+
+                if (this.emberParticles && this.emberPositions) {
+                    const count = this.emberPositions.length / 3;
+                    for (let i = 0; i < count; i++) {
+                        const i3 = i * 3;
+                        this.emberPositions[i3 + 1] += this.emberVelocities[i3 + 1];
+                        this.emberPositions[i3] += Math.sin(Date.now() * 0.002 + i) * 0.003 + this.emberVelocities[i3];
+
+                        if (this.emberPositions[i3 + 1] > 6) {
+                            this.emberPositions[i3 + 1] = -5;
+                            this.emberPositions[i3] = (Math.random() - 0.5) * 16;
+                        }
+                    }
+                    this.emberParticles.geometry.attributes.position.needsUpdate = true;
+                    this.emberParticles.rotation.y = this.mouseX * 0.3;
+                    this.emberParticles.rotation.x = -this.mouseY * 0.2;
+                }
+
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        class App {
+            constructor() {
+                this.sceneMgr = new SceneManager();
+                this.currentCategory = "ALL";
+                this.currentQuote = null;
+                this.savedQuotes = JSON.parse(localStorage.getItem('sophos_saved_quotes') || '[]');
+
+                this.initDOM();
+                this.bindEvents();
+                this.updateSavedCount();
+            }
+
+            initDOM() {
+                this.triggerBtn = document.getElementById('trigger-btn');
+                this.quoteCard = document.getElementById('quote-card');
+                this.heroWelcome = document.getElementById('hero-welcome');
+                this.quoteText = document.getElementById('quote-text');
+                this.quoteAuthor = document.getElementById('quote-author');
+                this.quoteEra = document.getElementById('quote-era');
+                this.quoteShortBio = document.getElementById('quote-short-bio');
+                
+                this.bioModal = document.getElementById('bio-modal');
+                this.modalAuthor = document.getElementById('modal-author');
+                this.modalEra = document.getElementById('modal-era');
+                this.modalBio = document.getElementById('modal-bio');
+                this.modalTags = document.getElementById('modal-tags');
+                this.bioInitial = document.getElementById('bio-initial');
+
+                this.savedDrawerBtn = document.getElementById('saved-drawer-btn');
+                this.savedModal = document.getElementById('saved-modal');
+                this.savedList = document.getElementById('saved-list');
+                this.closeSaved = document.getElementById('close-saved');
+                this.savedCount = document.getElementById('saved-count');
+
+                this.categoryBtn = document.getElementById('category-btn');
+                this.categoryDropdown = document.getElementById('category-dropdown');
+                this.toast = document.getElementById('toast');
+                this.toastMsg = document.getElementById('toast-msg');
+
+                this.btnSave = document.getElementById('btn-save');
+                this.saveIcon = document.getElementById('save-icon');
+                this.saveBtnText = document.getElementById('save-btn-text');
+            }
+
+            bindEvents() {
+                this.triggerBtn.addEventListener('click', () => {
+                    audioFX.init();
+                    audioFX.playSwoosh();
+                    this.getRandomQuote();
+                });
+
+                window.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space' && e.target === document.body) {
+                        e.preventDefault();
+                        audioFX.init();
+                        audioFX.playSwoosh();
+                        this.getRandomQuote();
+                    }
+                });
+
+                this.categoryBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.categoryDropdown.classList.toggle('hidden');
+                });
+
+                document.addEventListener('click', () => {
+                    this.categoryDropdown.classList.add('hidden');
+                });
+
+                document.querySelectorAll('.cat-option').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.currentCategory = btn.dataset.category;
+                        document.getElementById('current-category').innerText = btn.innerText.trim();
+                        this.categoryDropdown.classList.add('hidden');
+                        this.showToast(`Filter set to: ${this.currentCategory}`);
+                    });
+                });
+
+                document.getElementById('sound-toggle').addEventListener('click', () => {
+                    audioFX.init();
+                    audioFX.muted = !audioFX.muted;
+                    if(audioFX.muted) audioFX.stopSpeech();
+                    const icon = document.getElementById('sound-icon');
+                    icon.className = audioFX.muted ? "fa-solid fa-volume-xmark" : "fa-solid fa-volume-high";
+                    this.showToast(audioFX.muted ? "Audio Muted" : "Audio Enabled");
+                });
+
+                document.getElementById('btn-read').addEventListener('click', () => {
+                    if(this.currentQuote) audioFX.speakQuote(this.currentQuote);
+                });
+
+                this.btnSave.addEventListener('click', () => this.toggleSaveCurrentQuote());
+                this.savedDrawerBtn.addEventListener('click', () => this.openSavedDrawer());
+                this.closeSaved.addEventListener('click', () => this.closeSavedDrawer());
+
+                document.getElementById('btn-bio').addEventListener('click', () => this.openBioModal());
+                document.getElementById('close-bio').addEventListener('click', () => this.closeBioModal());
+
+                document.getElementById('btn-copy').addEventListener('click', () => {
+                    if(!this.currentQuote) return;
+                    const text = `"${this.currentQuote.quote}" — ${this.currentQuote.author}`;
+                    navigator.clipboard.writeText(text);
+                    this.showToast("Quote copied to clipboard!");
+                    audioFX.playTone(800, 'sine', 0.1, 0.05);
+                });
+            }
+
+            getRandomQuote() {
+                let pool = PHILOSOPHY_DB;
+                if(this.currentCategory !== "ALL") {
+                    pool = PHILOSOPHY_DB.filter(q => q.category === this.currentCategory);
+                }
+
+                // Endless procedural selection mix
+                if(Math.random() > 0.45 && WISDOM_TEMPLATES.length > 0) {
+                    const template = WISDOM_TEMPLATES[Math.floor(Math.random() * WISDOM_TEMPLATES.length)];
+                    this.currentQuote = {
+                        id: `procedural-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+                        author: template.author,
+                        era: `${template.era} • ${template.category}`,
+                        category: template.category,
+                        quote: template.quote,
+                        shortBio: template.shortBio,
+                        biography: `${template.author} was a premier thinker whose legacy shapes modern philosophical discourse.`,
+                        tags: template.tags,
+                        gender: template.gender,
+                        voice: template.voice,
+                        color: 0xC5A059
+                    };
+                } else {
+                    let selected;
+                    do {
+                        selected = pool[Math.floor(Math.random() * pool.length)];
+                    } while (selected === this.currentQuote && pool.length > 1);
+                    this.currentQuote = selected;
+                }
+
+                this.renderQuote(this.currentQuote);
+            }
+
+            renderQuote(data) {
+                if(this.heroWelcome.style.display !== 'none') {
+                    gsap.to(this.heroWelcome, {
+                        opacity: 0,
+                        duration: 0.4,
+                        onComplete: () => this.heroWelcome.style.display = 'none'
+                    });
+                }
+
+                gsap.to(this.quoteCard, {
+                    opacity: 0,
+                    y: -20,
+                    duration: 0.4,
+                    ease: "power2.in",
+                    onComplete: () => {
+                        this.quoteText.innerText = `"${data.quote}"`;
+                        this.quoteAuthor.innerText = data.author;
+                        this.quoteEra.innerText = data.era;
+                        this.quoteShortBio.innerText = data.shortBio;
+
+                        this.sceneMgr.transitionToTheme(data.color);
+                        this.updateSaveButtonState();
+
+                        this.quoteCard.classList.remove('pointer-events-none');
+                        gsap.fromTo(this.quoteCard,
+                            { opacity: 0, y: 30 },
+                            { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }
+                        );
+
+                        audioFX.speakQuote(data);
+                    }
+                });
+            }
+
+            toggleSaveCurrentQuote() {
+                if (!this.currentQuote) return;
+                const existingIndex = this.savedQuotes.findIndex(q => q.quote === this.currentQuote.quote);
+
+                if (existingIndex >= 0) {
+                    this.savedQuotes.splice(existingIndex, 1);
+                    this.showToast("Quote removed from saved");
+                } else {
+                    this.savedQuotes.push(this.currentQuote);
+                    this.showToast("Quote saved to bookmarks!");
+                    audioFX.playTone(900, 'sine', 0.15, 0.08);
+                }
+
+                localStorage.setItem('sophos_saved_quotes', JSON.stringify(this.savedQuotes));
+                this.updateSavedCount();
+                this.updateSaveButtonState();
+            }
+
+            updateSaveButtonState() {
+                if (!this.currentQuote) return;
+                const isSaved = this.savedQuotes.some(q => q.quote === this.currentQuote.quote);
+                if (isSaved) {
+                    this.saveIcon.className = "fa-solid fa-bookmark text-gold";
+                    this.saveBtnText.innerText = "Saved";
+                } else {
+                    this.saveIcon.className = "fa-regular fa-bookmark";
+                    this.saveBtnText.innerText = "Save";
+                }
+            }
+
+            updateSavedCount() {
+                this.savedCount.innerText = this.savedQuotes.length;
+            }
+
+            openSavedDrawer() {
+                this.renderSavedList();
+                this.savedModal.classList.remove('pointer-events-none');
+                gsap.to(this.savedModal, { opacity: 1, duration: 0.3 });
+                gsap.to(this.savedModal.firstElementChild, { x: 0, duration: 0.4, ease: "power3.out" });
+            }
+
+            closeSavedDrawer() {
+                gsap.to(this.savedModal.firstElementChild, { 
+                    x: "100%", 
+                    duration: 0.3,
+                    ease: "power3.in"
+                });
+                gsap.to(this.savedModal, {
+                    opacity: 0,
+                    duration: 0.3,
+                    onComplete: () => this.savedModal.classList.add('pointer-events-none')
+                });
+            }
+
+            renderSavedList() {
+                if (this.savedQuotes.length === 0) {
+                    this.savedList.innerHTML = `<p class="text-xs text-gray-500 italic text-center py-8">No saved quotes yet. Click 'Save' on any quote to collect wisdom.</p>`;
+                    return;
+                }
+
+                this.savedList.innerHTML = this.savedQuotes.map((q, idx) => `
+                    <div class="glass-card p-4 rounded-2xl relative border border-gold/20 flex flex-col justify-between space-y-2">
+                        <blockquote class="text-xs text-gray-200 font-cinzel leading-relaxed">"${q.quote}"</blockquote>
+                        <div class="flex items-center justify-between text-[11px] text-gold pt-2 border-t border-gold/10">
+                            <span>— ${q.author}</span>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="app.removeSavedItem(${idx})" class="text-gray-400 hover:text-red-400 p-1">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            removeSavedItem(idx) {
+                this.savedQuotes.splice(idx, 1);
+                localStorage.setItem('sophos_saved_quotes', JSON.stringify(this.savedQuotes));
+                this.updateSavedCount();
+                this.updateSaveButtonState();
+                this.renderSavedList();
+            }
+
+            openBioModal() {
+                if(!this.currentQuote) return;
+                const d = this.currentQuote;
+
+                this.modalAuthor.innerText = d.author;
+                this.modalEra.innerText = `${d.category} (${d.era})`;
+                this.modalBio.innerText = d.biography;
+                this.bioInitial.innerText = d.author.charAt(0);
+
+                this.modalTags.innerHTML = (d.tags || ["Wisdom"]).map(t => 
+                    `<span class="text-[11px] px-2.5 py-1 rounded-md bg-gold/10 text-gold border border-gold/20">${t}</span>`
+                ).join('');
+
+                this.bioModal.classList.remove('pointer-events-none');
+                gsap.to(this.bioModal, { opacity: 1, duration: 0.3 });
+                gsap.to(this.bioModal.firstElementChild, { scale: 1, duration: 0.4, ease: "back.out(1.2)" });
+            }
+
+            closeBioModal() {
+                gsap.to(this.bioModal, {
+                    opacity: 0,
+                    duration: 0.3,
+                    onComplete: () => this.bioModal.classList.add('pointer-events-none')
+                });
+                gsap.to(this.bioModal.firstElementChild, { scale: 0.95, duration: 0.3 });
+            }
+
+            showToast(msg) {
+                this.toastMsg.innerText = msg;
+                this.toast.classList.remove('pointer-events-none');
+                gsap.to(this.toast, { opacity: 1, y: 10, duration: 0.3 });
+
+                setTimeout(() => {
+                    gsap.to(this.toast, { 
+                        opacity: 0, 
+                        y: 0, 
+                        duration: 0.3,
+                        onComplete: () => this.toast.classList.add('pointer-events-none')
+                    });
+                }, 2500);
+            }
+        }
+
+        window.onload = () => {
+            window.app = new App();
+        };
+    </script>
+</body>
+</html>
